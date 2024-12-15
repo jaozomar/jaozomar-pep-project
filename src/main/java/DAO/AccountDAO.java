@@ -7,9 +7,11 @@ import java.sql.*;
 
 public class AccountDAO {
 
-    // insert an account into the Account table
-    // parameters: Account acc
-    // return: Account acc with the generated id if successful. Otherwise return null
+    /**
+     * insert an account into the Account table
+     * @param Account acc
+     * @return Account acc with the generated id if successful. Otherwise return null
+    */
     public Account insertAcount(Account acc) {
         Connection conn = ConnectionUtil.getConnection();
         try {
@@ -33,9 +35,11 @@ public class AccountDAO {
         return null;
     }
 
-    // search the Account table for a record with the given username
-    // parameters: String username, which represents the username to search for
-    // return: Account object formed by the record matching the username if found. Otherwise return null
+    /**
+     * search the Account table for a record with the given username
+     * @param String username, which represents the username to search for
+     * @return Account object formed by the record matching the username if found. Otherwise return null
+    */
     public Account searchByUsername(String username) {
         Connection conn = ConnectionUtil.getConnection();
         try {
@@ -61,9 +65,11 @@ public class AccountDAO {
         return null;
     }
 
-    // search the Account table for a record with the given id
-    // parameters: int accID, which represents the account id to search for
-    // return: true if an account with account_id matching accID was found. Otherwise return false
+    /**
+     * search the Account table for a record with the given id
+     * @param int accID, which represents the account id to search for
+     * @return true if an account with account_id matching accID was found. Otherwise return false
+    */
     public boolean doesIDExist(int accID) {
         Connection conn = ConnectionUtil.getConnection();
         try {

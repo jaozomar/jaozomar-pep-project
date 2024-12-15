@@ -16,11 +16,12 @@ import io.javalin.http.Context;
 public class SocialMediaController {
     private final AccountService accService;
     private final MessageService msgService;
-    private final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om;
 
     public SocialMediaController() {
         accService = new AccountService();
         msgService = new MessageService();
+        om = new ObjectMapper();
     }
 
     /**
@@ -31,12 +32,36 @@ public class SocialMediaController {
     public Javalin startAPI() {
         Javalin app = Javalin.create();
         app.get("example-endpoint", this::exampleHandler);
+
+        //register a new account
         app.post("register", this::registrationHandler);
+
+        //login to an account
         app.post("login",this::loginHandler);
+
+        //create new message
         app.post("messages",this::messageCreationHandler);
+
+        //get all messages
         app.get("messages",ctx -> {
             ctx.status(200);
             ctx.json(msgService.getAllMessages());
+        });
+
+        //get message by it's message id
+        app.get("messages/{message_id}", this::searchMessageHandler);
+
+        //delete message by it's message id
+        app.delete("messages/{message_id}", this::deleteMessageHandler);
+
+        //update the text for a message of a specified message id
+        app.patch("messages/{message_id}", this::updateMessageHandler);
+
+        //get all messages posted by a user of a specified account id
+        app.get("accounts/{account_id}/messages", ctx -> {
+            int accID = Integer.parseInt(ctx.pathParam("account_id")); //get the path parameter as an int
+            ctx.status(200);
+            ctx.json(msgService.getMessagesByUser(accID));
         });
 
         return app;
@@ -50,6 +75,10 @@ public class SocialMediaController {
         context.json("sample text");
     }
 
+    /**
+     * handler for the account registration
+     * @param context Context object to manage information about the request and response
+     */
     private void registrationHandler(Context ctx) {
         try { //in case of issue when mapping
             Account inputAcc = om.readValue(ctx.body(), Account.class);
@@ -66,6 +95,10 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * handler for the account login
+     * @param context Context object to manage information about the request and response
+     */
     private void loginHandler(Context ctx) {
         try { //in case of issue when mapping
             Account inputAcc = om.readValue(ctx.body(), Account.class);
@@ -82,6 +115,10 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * handler for the message creation
+     * @param context Context object to manage information about the request and response
+     */
     private void messageCreationHandler(Context ctx) {
         try { //in case of issue when mapping
             Message inputMsg = om.readValue(ctx.body(), Message.class);
@@ -98,5 +135,48 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * handler for searching messages with a given message id
+     * @param context Context object to manage information about the request and response
+     */
+    private void searchMessageHandler(Context ctx) {
+        int msgID = Integer.parseInt(ctx.pathParam("message_id")); //get the path parameter as an int
+        Message resultMsg = msgService.getMessageByID(msgID);
+        ctx.status(200);
+        if(resultMsg != null)
+            ctx.json(resultMsg); //return json if message was found
+    }
 
+    /**
+     * handler for message deletion
+     * @param context Context object to manage information about the request and response
+     */
+    private void deleteMessageHandler(Context ctx) {
+        int msgID = Integer.parseInt(ctx.pathParam("message_id")); //get the path parameter as an int
+        Message resultMsg = msgService.deleteMessage(msgID);
+        ctx.status(200);
+        if(resultMsg != null)
+            ctx.json(resultMsg); //return json if message was deleted
+    }
+
+    /**
+     * handler for the message text updates
+     * @param context Context object to manage information about the request and response
+     */
+    private void updateMessageHandler(Context ctx) {
+        try {
+            String msgText = (om.readValue(ctx.body(), Message.class)).getMessage_text(); //get given message_text
+            int msgID = Integer.parseInt(ctx.pathParam("message_id")); //get the path parameter as an int
+            Message resultMsg = msgService.updateMessage(msgText, msgID);
+            if(resultMsg == null)
+                ctx.status(400);
+            else {
+                ctx.status(200);
+                ctx.json(resultMsg);
+            }
+        } catch(Exception e) {
+            ctx.status(400);
+            e.printStackTrace();
+        }
+    }
 }
