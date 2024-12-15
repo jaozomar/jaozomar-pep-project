@@ -4,8 +4,6 @@ import Model.Account;
 import Util.ConnectionUtil;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AccountDAO {
 
@@ -23,14 +21,14 @@ public class AccountDAO {
             ps.setString(2, acc.getPassword());
             ps.executeUpdate();
 
-            // The generated keys restult set. Should just have the new account_id that was automatically generated
+            // The generated keys restult set. Should contain the new account_id that was automatically generated
             ResultSet res = ps.getGeneratedKeys();
             if(res.next()) {
                 acc.setAccount_id(res.getInt("account_id")); //set the account_id
                 return acc; //return acc with the generated account_id
             }
         } catch(Exception e) {
-            e.getStackTrace();
+            e.printStackTrace();
         }
         return null;
     }
@@ -44,7 +42,7 @@ public class AccountDAO {
             String sql = "SELECT * FROM Account WHERE username=?";
             PreparedStatement ps = conn.prepareStatement(sql);
 
-            //Set account id to search for
+            //Set account username to search for
             ps.setString(1,username);
 
             //Look to see if there is a match in the result set
@@ -58,9 +56,33 @@ public class AccountDAO {
                 );
             }
         } catch(Exception e) {
-            e.getStackTrace();
+            e.printStackTrace();
         }
         return null;
+    }
+
+    // search the Account table for a record with the given id
+    // parameters: int accID, which represents the account id to search for
+    // return: true if an account with account_id matching accID was found. Otherwise return false
+    public boolean doesIDExist(int accID) {
+        Connection conn = ConnectionUtil.getConnection();
+        try {
+            String sql = "SELECT * FROM Account WHERE account_id=?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+
+            //Set account id to search for
+            ps.setInt(1,accID);
+            
+            //Look to see if there is a match in the result set
+            ResultSet res = ps.executeQuery();
+            while(res.next()) {
+                return true; //return true if a matching account was found
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        return false; //return false if no matching account was ever found
     }
 
 }

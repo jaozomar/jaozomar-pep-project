@@ -1,7 +1,7 @@
 package Controller;
 
-import Model.Account;
-import Service.AccountService;
+import Model.*;
+import Service.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,10 +14,13 @@ import io.javalin.http.Context;
  * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
  */
 public class SocialMediaController {
-    AccountService accService;
+    private final AccountService accService;
+    private final MessageService msgService;
+    private final ObjectMapper om = new ObjectMapper();
 
     public SocialMediaController() {
         accService = new AccountService();
+        msgService = new MessageService();
     }
 
     /**
@@ -28,7 +31,13 @@ public class SocialMediaController {
     public Javalin startAPI() {
         Javalin app = Javalin.create();
         app.get("example-endpoint", this::exampleHandler);
-        app.post("register", this::postHandler);
+        app.post("register", this::registrationHandler);
+        app.post("login",this::loginHandler);
+        app.post("messages",this::messageCreationHandler);
+        app.get("messages",ctx -> {
+            ctx.status(200);
+            ctx.json(msgService.getAllMessages());
+        });
 
         return app;
     }
@@ -41,25 +50,51 @@ public class SocialMediaController {
         context.json("sample text");
     }
 
-    private void postHandler(Context ctx) {
-        try {
-            ObjectMapper om = new ObjectMapper();
+    private void registrationHandler(Context ctx) {
+        try { //in case of issue when mapping
             Account inputAcc = om.readValue(ctx.body(), Account.class);
-            if(inputAcc.getUsername() == null || inputAcc.getUsername().length() < 1) //username can't be empty
-                ctx.status(400);
-            else if(inputAcc.getPassword().length() < 4) //password must be atleast 4 chars long
+            Account resultAcc = accService.addAccount(inputAcc); //this will insert into table or return null
+            if(resultAcc == null) //fails to add if null
                 ctx.status(400);
             else {
-                Account resultAcc = accService.addAccount(inputAcc); //this will insert into table or return null
-                if(resultAcc == null) //fails if null
-                    ctx.status(400);
-                else {
-                    ctx.status(200); //success status code
-                    ctx.json(resultAcc);
-                }
+                ctx.status(200);
+                ctx.json(resultAcc);
             }
         } catch(Exception e) {
             ctx.status(400);
+            e.printStackTrace();
+        }
+    }
+
+    private void loginHandler(Context ctx) {
+        try { //in case of issue when mapping
+            Account inputAcc = om.readValue(ctx.body(), Account.class);
+            Account resultAcc = accService.login(inputAcc); //will try to login with given info
+            if(resultAcc == null) //fails to login if null
+                ctx.status(401);
+            else {
+                ctx.status(200);
+                ctx.json(resultAcc);
+            }
+        } catch(Exception e) {
+            ctx.status(401);
+            e.printStackTrace();
+        }
+    }
+
+    private void messageCreationHandler(Context ctx) {
+        try { //in case of issue when mapping
+            Message inputMsg = om.readValue(ctx.body(), Message.class);
+            Message resultMsg = msgService.addMessage(inputMsg); //this will insert into table or return null
+            if(resultMsg == null) //fails to add message if null
+                ctx.status(400);
+            else {
+                ctx.status(200);
+                ctx.json(resultMsg);
+            }
+        } catch(Exception e) {
+            ctx.status(400);
+            e.printStackTrace();
         }
     }
 
